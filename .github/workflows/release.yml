@@ -1,0 +1,42 @@
+# 发布: 推送 v* 标签 → 在 Windows/Linux 各自的 runner 上构建安装包并挂到 Releases
+# 用法: git tag v0.1.0 && git push origin v0.1.0
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ubuntu-22.04, windows-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: 安装 Tauri 系统依赖
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file \
+            libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+      - run: npm ci
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "Moment v__VERSION__"
+          releaseBody: |
+            本地优先的屏幕时间统计工具。
+
+            - **Windows**: 下载 `.msi` 或 `_setup.exe` 双击安装
+            - **Linux (deb 系)**: 下载 `.deb` 后 `sudo dpkg -i` 安装
+          releaseDraft: false
+          prerelease: false
