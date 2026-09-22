@@ -174,9 +174,11 @@ P2 进展（2026-09-23）：
 3. ~~P2.3 Overview 增强~~ ✅ 较昨日/上一周期 ↑↓%、今日(逐时)/7天/30天切换、排行百分比
 4. ~~P2.4 App 图标~~ ✅ `.desktop` → hicolor 解析 → base64，缓存 + 字母回退
 5. ~~P2.5 单应用趋势~~ ✅ 应用页点击展开近 30 天迷你柱状
-6. **P2.6 发布工程**：deb 打包 ✅（`npm run tauri build`）；开机自启 ⬜（tauri-plugin-autostart）
-7. **P2.7 平台扩展** ⬜：Windows（SetWinEventHook）/ macOS（NSWorkspace），沿用 PlatformTracker trait
+6. **P2.6 发布工程** ✅：deb 打包（`npm run tauri build`）；开机自启（tauri-plugin-autostart + 设置页开关，Linux 写 `~/.config/autostart`）；浅色/深色主题（token 覆盖 + 防闪烁脚本）；MIT 协议
+7. **P2.7 平台扩展**：Windows ✅ 已实现（原生 FFI：`GetForegroundWindow` + `GetWindowTextW` + `QueryFullProcessImageNameW` + `GetLastInputInfo`，1s 轮询共用 `polling.rs` 骨架；经 `RUSTFLAGS='--cfg xcheck' cargo check` 交叉类型检查，待真机验证）；macOS ⬜ 待做（用户要求暂缓）
 
-已移除：Timeline 页面及其 `timeline` 命令/会话明细查询（按需求，2026-09-23）。
+轮询骨架：`polling.rs` 统一 x11/windows 的去重、空闲抑制、恢复补报与超时语义，平台子类只实现「查窗口」「查空闲毫秒」两个原语（`PollObserver`）。
 
-验证记录：14 个单测全绿、clippy 0 警告、tsc+vite 通过、v1→v2 数据库原地迁移验证、图标解析对 chrome/kitty/QQ/clash-verge/orca/Nautilus 全命中。
+已移除：Timeline 页面及其 `timeline` 命令/会话明细查询（按需求，2026-09-23）；macOS 实现（用户要求暂缓）。
+
+验证记录：14 个单测全绿（15 连跑无偶发；修复过并行测试临时库路径冲突）、clippy 0 警告、tsc+vite 通过、v1→v2 数据库原地迁移验证、图标解析全命中、Windows 源码交叉类型检查通过（含注入错误的阳性对照）。

@@ -8,9 +8,20 @@ pub mod icon;
 pub mod wayland;
 #[cfg(target_os = "linux")]
 pub mod x11;
+#[cfg(target_os = "windows")]
+pub(crate) mod windows;
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+pub(crate) mod polling;
 
 #[cfg(target_os = "linux")]
 pub use icon::{resolve_app_icon, IconData};
+
+// 交叉类型检查: 在任意宿主上 `RUSTFLAGS='--cfg xcheck' cargo check`
+// 即可对 Windows 实现做类型检查 (仅 check, 不链接)
+#[cfg(all(xcheck, not(target_os = "windows")))]
+#[path = "windows.rs"]
+#[allow(dead_code)]
+mod windows_check;
 
 use std::time::Duration;
 
@@ -59,29 +70,31 @@ pub trait PlatformTracker: Send {
     fn next_event(&mut self, timeout: Duration) -> PlatformResult<Option<TrackerEvent>>;
 }
 
-/// 按环境选择平台实现：wayland 优先（原生事件驱动），失败回落 x11。
-/// 两者都不可用时报错（无图形会话）。
+/// 按平台/环境选择实现：Linux 上 wayland 优先（原生事件驱动）回落 x11；
+/// Windows 使用轮询骨架实现。macOS 待实现。
+#[allow(unreachable_code)] // cfg 组合使各分支提前 return
 pub fn create_tracker(idle_timeout: Duration) -> PlatformResult<Box<dyn PlatformTracker>> {
     #[cfg(target_os = "linux")]
-    {
-        if std::env::var_os("WAYLAND_DISPLAY").is_some() {
-            match wayland::WaylandTracker::new(idle_timeout) {
-                Ok(t) => {
-                    tracing::info!(platform = t.name(), "platform tracker ready");
-                    return Ok(Box::new(t));
-                }
-                Err(e) => {
-                    tracing::warn!("wayland tracker 初始化失败, 回落 x11: {e}");
-                }
+    if std::env::var_os("WAYLAND_DISPLAY").is_some() {
+        match wayland::WaylandTracker::new(idle_timeout) {
+            Ok(t) => {
+                tracing::info!(platform = t.name(), "platform tracker ready");
+                return Ok(Box::new(t));
+            }
+            Err(e) => {
+                tracing::warn!("wayland tracker 初始化失败, 回落 x11: {e}");
             }
         }
-        if std::env::var_os("DISPLAY").is_some() {
-            let t = x11::X11Tracker::new(idle_timeout)?;
-            tracing::info!(platform = t.name(), "platform tracker ready");
-            return Ok(Box::new(t));
-        }
+    }
+    #[cfg(target_os = "linux")]
+    if std::env::var_os("DISPLAY").is_some() {
+        return x11::create(idle_timeout);
+    }
+    #[cfg(target_os = "windows")]
+    {
+        return windows::create(idle_timeout);
     }
     Err(PlatformError::Message(
-        "未检测到图形会话 (WAYLAND_DISPLAY / DISPLAY 均未设置)".to_string(),
+        "未检测到可用的图形会话".to_string(),
     ))
 }

@@ -361,12 +361,16 @@ mod tests {
     use chrono::{DateTime, TimeZone};
 
     fn test_db() -> DbHandle {
+        // 原子序号保证并行测试的临时库路径唯一 (Instant 在时钟粒度内可重复)
+        static SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let n = SEQ.fetch_add(1, Ordering::Relaxed);
         let path = std::env::temp_dir().join(format!(
-            "moment-test-{}-{:?}.db",
-            std::process::id(),
-            std::time::Instant::now()
+            "moment-test-{}-{n}.db",
+            std::process::id()
         ));
-        crate::database::Db::open(&path).expect("open test db")
+        let db = crate::database::Db::open(&path).expect("open test db");
+        let _ = std::fs::remove_file(&path); // SQLite 句柄仍有效, 退出即清
+        db
     }
 
     fn engine() -> (Engine, Arc<AtomicBool>) {

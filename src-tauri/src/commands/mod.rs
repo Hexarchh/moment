@@ -6,7 +6,7 @@ use serde::Serialize;
 use tauri::{AppHandle, State};
 
 use crate::database::repo;
-use crate::error::AppResult;
+use crate::error::{AppError, AppResult};
 use crate::models::{AppUsage, Settings};
 use crate::state::AppState;
 
@@ -164,4 +164,25 @@ pub fn set_paused(app: AppHandle, state: State<'_, AppState>, paused: bool) -> A
     state.set_paused(paused);
     crate::update_tray_pause_text(&app, paused);
     Ok(())
+}
+
+/// 开机自启状态 (Linux: ~/.config/autostart 下的 desktop 项)
+#[tauri::command]
+pub fn get_autostart(app: AppHandle) -> AppResult<bool> {
+    use tauri_plugin_autostart::ManagerExt as _;
+    app.autolaunch()
+        .is_enabled()
+        .map_err(|e| AppError::Message(format!("读取自启状态失败: {e}")))
+}
+
+#[tauri::command]
+pub fn set_autostart(app: AppHandle, enabled: bool) -> AppResult<()> {
+    use tauri_plugin_autostart::ManagerExt as _;
+    let manager = app.autolaunch();
+    let r = if enabled {
+        manager.enable()
+    } else {
+        manager.disable()
+    };
+    r.map_err(|e| AppError::Message(format!("设置开机自启失败: {e}")))
 }

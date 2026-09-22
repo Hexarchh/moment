@@ -1,9 +1,17 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Moment</title>
+    <script>
+      // 防闪烁: 渲染前应用持久化的主题
+      try {
+        if (localStorage.getItem("moment-theme") === "light") {
+          document.documentElement.classList.add("light");
+        }
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

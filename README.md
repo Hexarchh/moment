@@ -9,7 +9,8 @@
 - **空闲检测**：无输入超过阈值即停止计时，空闲时段单独记录（`idle_periods` 表）
 - **异常防护**：单调钟钳制——系统休眠、时钟跳变不会产生虚长会话；崩溃遗留会话启动时自动回收
 - **完整统计**：今日 / 近 7 天 / 近 30 天趋势、较昨日对比、应用排行（真实图标 + 占比）、单应用 30 天趋势
-- **托盘常驻**：关闭窗口即最小化到托盘继续统计；支持暂停 / 恢复
+- **托盘常驻**：关闭窗口即最小化到托盘继续统计；支持暂停 / 恢复、开机自启
+- **深色 / 浅色主题**：一键切换，重启保持
 - **本地优先**：数据只存在本机 SQLite（`~/.local/share/moment/moment.db`），无账号、无云端、无遥测
 
 ## 技术栈
@@ -36,14 +37,18 @@ src/
 npm install
 npm run tauri dev      # 开发模式
 npm run tauri build    # 产出 release 二进制 + deb
+
+# 在 Linux 宿主上对 Windows 平台代码做类型检查 (仅 check, 不链接):
+cd src-tauri && RUSTFLAGS='--cfg xcheck' cargo check
 ```
 
 ## 平台支持
 
-- Linux (Wayland) ✅ 完整实现
+- Linux (Wayland) ✅ 完整实现并实测
 - Linux (X11/XWayland) ✅ 兜底实现
-- Windows / macOS ⬜ 计划中（沿用 `PlatformTracker` trait 逐平台扩展）
+- Windows ✅ 已实现（`GetForegroundWindow` + `GetLastInputInfo` 原生 FFI，经交叉类型检查，待真机验证）
+- macOS ⬜ 计划中（预留 `PlatformTracker` 扩展位）
 
 ## 许可
 
-个人项目，未指定开源协议。
+[MIT](LICENSE) © 2026 Chen Kai

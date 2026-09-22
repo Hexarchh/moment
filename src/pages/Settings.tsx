@@ -1,11 +1,24 @@
 import { useEffect, useState } from "react";
+import { Toggle } from "../components/Toggle";
 import { api, type Settings as SettingsData } from "../lib/api";
+
+type Theme = "dark" | "light";
+
+function initialTheme(): Theme {
+  try {
+    return localStorage.getItem("moment-theme") === "light" ? "light" : "dark";
+  } catch {
+    return "dark";
+  }
+}
 
 export function Settings() {
   const [settings, setSettings] = useState<SettingsData | null>(null);
   const [minutes, setMinutes] = useState(1);
   const [paused, setPaused] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [theme, setTheme] = useState<Theme>(initialTheme);
+  const [autostart, setAutostart] = useState<boolean | null>(null);
 
   useEffect(() => {
     api
@@ -19,7 +32,26 @@ export function Settings() {
       .overview()
       .then((o) => setPaused(o.paused))
       .catch(() => {});
+    api
+      .getAutostart()
+      .then(setAutostart)
+      .catch(() => setAutostart(false));
   }, []);
+
+  const applyTheme = (t: Theme) => {
+    setTheme(t);
+    try {
+      localStorage.setItem("moment-theme", t);
+    } catch {}
+    document.documentElement.classList.toggle("light", t === "light");
+  };
+
+  const toggleAutostart = () => {
+    if (autostart === null) return;
+    const next = !autostart;
+    setAutostart(next);
+    api.setAutostart(next).catch(() => setAutostart(!next));
+  };
 
   const save = () => {
     api
@@ -42,6 +74,50 @@ export function Settings() {
       <h1 className="text-[22px] font-semibold tracking-tight">设置</h1>
 
       <div className="mt-8 rounded-card border border-border bg-card p-5">
+        <div className="text-[13px] font-medium">外观</div>
+        <div className="mt-3 flex items-center justify-between">
+          <p className="max-w-[420px] text-[13px] leading-relaxed text-muted">
+            界面配色主题，立即生效并记住选择。
+          </p>
+          <div className="flex overflow-hidden rounded-control border border-border">
+            {(
+              [
+                ["dark", "深色"],
+                ["light", "浅色"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                onClick={() => applyTheme(id)}
+                className={`px-3 py-1 text-[12.5px] transition-colors duration-150 ${
+                  theme === id ? "bg-surface text-text" : "text-muted hover:text-text"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-card border border-border bg-card p-5">
+        <div className="text-[13px] font-medium">通用</div>
+        <div className="mt-3 flex items-center justify-between">
+          <p className="max-w-[420px] text-[13px] leading-relaxed text-muted">
+            开机自动启动 Moment 并在后台统计
+            {autostart === true && (
+              <span className="text-faint">（~/.config/autostart）</span>
+            )}
+          </p>
+          <Toggle
+            on={autostart === true}
+            disabled={autostart === null}
+            onClick={toggleAutostart}
+          />
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-card border border-border bg-card p-5">
         <div className="text-[13px] font-medium">统计</div>
         <div className="mt-3 flex items-center justify-between">
           <p className="max-w-[420px] text-[13px] leading-relaxed text-muted">

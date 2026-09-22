@@ -9,6 +9,9 @@ pub enum AppError {
 
     #[error("database error: {0}")]
     Sqlite(#[from] rusqlite::Error),
+
+    #[error("{0}")]
+    Message(String),
 }
 
 impl Serialize for AppError {

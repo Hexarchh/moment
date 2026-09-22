@@ -1,9 +1,7 @@
-//! X11 / XWayland 实现: 内部 1s 轮询 `_NET_ACTIVE_WINDOW` + screensaver 空闲,
-//! 去重后对外表现为事件源 (与 wayland 统一)。
-//!
-//! 空闲抑制与 wayland 一致: 空闲期间不报窗口事件, 恢复输入时补报一次前台窗口。
+//! X11 / XWayland 实现: 1s 轮询 `_NET_ACTIVE_WINDOW` + MIT-SCREEN-SAVER 空闲。
+//! 骨架逻辑 (去重/空闲抑制/恢复补报) 见 polling.rs。
 
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use x11rb::connection::Connection as _;
 use x11rb::protocol::screensaver::ConnectionExt as _;
@@ -11,7 +9,8 @@ use x11rb::protocol::xproto::ConnectionExt as _;
 use x11rb::protocol::xproto::{AtomEnum, GetPropertyReply};
 use x11rb::rust_connection::RustConnection;
 
-use super::{ActiveWindow, PlatformError, PlatformResult, PlatformTracker, TrackerEvent};
+use super::polling::{PollObserver, PollingTracker};
+use super::{ActiveWindow, PlatformError, PlatformResult, PlatformTracker};
 
 x11rb::atom_manager! {
     /// 用到的 X atom 一次性 intern
@@ -25,25 +24,16 @@ x11rb::atom_manager! {
     }
 }
 
-/// 轮询周期
-const POLL_INTERVAL: Duration = Duration::from_secs(1);
-
-pub struct X11Tracker {
+pub(crate) struct X11Observer {
     conn: RustConnection,
     root: x11rb::protocol::xproto::Window,
     atoms: Atoms,
-    /// 上次观测到的前台窗口 (去重用)
-    last: Option<ActiveWindow>,
-    idle: bool,
-    idle_threshold: Duration,
     /// screensaver 扩展不可用时置 false, 空闲检测退化为永久活跃
     screensaver_ok: bool,
-    next_poll: Instant,
-    out: std::collections::VecDeque<TrackerEvent>,
 }
 
-impl X11Tracker {
-    pub fn new(idle_threshold: Duration) -> PlatformResult<Self> {
+impl X11Observer {
+    pub(crate) fn new() -> PlatformResult<Self> {
         let (conn, screen_num) = x11rb::connect(None)
             .map_err(|e| PlatformError::Message(format!("x11 connect: {e}")))?;
         let root = conn.setup().roots[screen_num].root;
@@ -51,31 +41,21 @@ impl X11Tracker {
             .map_err(|e| PlatformError::Message(format!("x11 intern atoms: {e}")))?
             .reply()
             .map_err(|e| PlatformError::Message(format!("x11 intern atoms: {e}")))?;
-
-        let mut tracker = Self {
+        Ok(Self {
             conn,
             root,
             atoms,
-            last: None,
-            idle: false,
-            idle_threshold,
             screensaver_ok: true,
-            next_poll: Instant::now(),
-            out: Default::default(),
-        };
-        // 启动即观测一次, 让引擎立刻拿到首个前台窗口
-        tracker.poll_once();
-        Ok(tracker)
+        })
+    }
+}
+
+impl PollObserver for X11Observer {
+    fn name(&self) -> &'static str {
+        "x11"
     }
 
-    /// 执行一轮观测, 产出的事件进入 `out`
-    fn poll_once(&mut self) {
-        self.observe_window();
-        self.observe_idle();
-        self.next_poll = Instant::now() + POLL_INTERVAL;
-    }
-
-    fn observe_window(&mut self) {
+    fn window(&mut self) -> Option<ActiveWindow> {
         let reply = match self.conn.get_property(
             false,
             self.root,
@@ -87,7 +67,7 @@ impl X11Tracker {
             Ok(c) => c,
             Err(e) => {
                 tracing::warn!("x11: query _NET_ACTIVE_WINDOW failed: {e}");
-                return;
+                return None;
             }
         };
         let window = reply
@@ -97,7 +77,7 @@ impl X11Tracker {
             .unwrap_or(0);
         if window == 0 {
             // 无 EWMH 前台窗口 (桌面/无窗口), 保持上次观测
-            return;
+            return None;
         }
 
         let title = self
@@ -134,70 +114,39 @@ impl X11Tracker {
             .or_else(|| exe_basename.clone())
             .unwrap_or_else(|| app_key.clone());
 
-        let current = ActiveWindow {
+        Some(ActiveWindow {
             app_key,
             name,
             title,
             executable: exe_basename,
             path: exe_path.map(|p| p.to_string_lossy().to_string()),
-        };
-
-        let changed = match &self.last {
-            None => true,
-            Some(prev) => prev.app_key != current.app_key || prev.title != current.title,
-        };
-        self.last = Some(current.clone());
-        if changed && !self.idle {
-            tracing::debug!(app = %current.app_key, title = ?current.title, "x11: active window");
-            self.out.push_back(TrackerEvent::ActiveWindow(current));
-        }
+        })
     }
 
-    fn observe_idle(&mut self) {
+    fn idle_ms(&mut self) -> Option<u64> {
         if !self.screensaver_ok {
-            return;
+            return None;
         }
-        let idle_ms = match self.conn.screensaver_query_info(self.root) {
+        match self.conn.screensaver_query_info(self.root) {
             Ok(c) => match c.reply() {
-                Ok(info) => info.ms_since_user_input,
+                Ok(info) => Some(u64::from(info.ms_since_user_input)),
                 Err(e) => {
                     tracing::warn!("x11: screensaver query failed: {e}");
                     self.screensaver_ok = false;
-                    return;
+                    None
                 }
             },
             Err(e) => {
                 tracing::warn!("x11: screensaver query failed: {e}");
                 self.screensaver_ok = false;
-                return;
+                None
             }
-        };
-
-        let idle_now = Duration::from_millis(u64::from(idle_ms)) >= self.idle_threshold;
-        match (idle_now, self.idle) {
-            (true, false) => {
-                self.idle = true;
-                self.out.push_back(TrackerEvent::IdleStarted);
-                tracing::debug!("x11: idle started");
-            }
-            (false, true) => {
-                self.idle = false;
-                self.out.push_back(TrackerEvent::InputResumed);
-                if let Some(w) = self.last.clone() {
-                    self.out.push_back(TrackerEvent::ActiveWindow(w));
-                }
-                tracing::debug!("x11: input resumed");
-            }
-            _ => {}
         }
     }
+}
 
-    fn window_string(
-        &self,
-        window: u32,
-        prop: u32,
-        type_: u32,
-    ) -> Option<String> {
+impl X11Observer {
+    fn window_string(&self, window: u32, prop: u32, type_: u32) -> Option<String> {
         let reply: GetPropertyReply = self
             .conn
             .get_property(false, window, prop, type_, 0, 4096)
@@ -210,28 +159,9 @@ impl X11Tracker {
     }
 }
 
-impl PlatformTracker for X11Tracker {
-    fn name(&self) -> &'static str {
-        "x11"
-    }
-
-    fn next_event(&mut self, timeout: Duration) -> PlatformResult<Option<TrackerEvent>> {
-        let deadline = Instant::now() + timeout;
-        loop {
-            if let Some(ev) = self.out.pop_front() {
-                return Ok(Some(ev));
-            }
-            let now = Instant::now();
-            if now >= deadline {
-                return Ok(None);
-            }
-            if now >= self.next_poll {
-                self.poll_once();
-                continue;
-            }
-            // 睡到下一个轮询点或 deadline, 取较早者
-            let wake = self.next_poll.min(deadline);
-            std::thread::sleep(wake.saturating_duration_since(Instant::now()));
-        }
-    }
+pub(crate) fn create(idle_timeout: Duration) -> PlatformResult<Box<dyn PlatformTracker>> {
+    Ok(Box::new(PollingTracker::new(
+        X11Observer::new()?,
+        idle_timeout,
+    )))
 }

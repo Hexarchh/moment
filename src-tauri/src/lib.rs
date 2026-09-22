@@ -34,6 +34,10 @@ pub fn run() {
     init_tracing();
 
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            None,
+        ))
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             if let Some(win) = app.get_webview_window("main") {
                 let _ = win.show();
@@ -65,7 +69,9 @@ pub fn run() {
             commands::app_icon,
             commands::get_settings,
             commands::set_settings,
-            commands::set_paused
+            commands::set_paused,
+            commands::get_autostart,
+            commands::set_autostart
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

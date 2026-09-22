@@ -25,6 +25,19 @@ body,
   height: 100%;
 }
 
+/* 浅色主题: 覆盖同名 token, 所有工具类 (bg-bg/text-muted/…) 随之切换 */
+html.light {
+  --color-bg: #f6f6f7;
+  --color-surface: #fcfcfd;
+  --color-card: #ffffff;
+  --color-border: #e5e5ea;
+  --color-border-soft: #eeeef1;
+  --color-text: #1b1b20;
+  --color-muted: #66666f;
+  --color-faint: #97979f;
+  --color-accent: #5058c0;
+}
+
 body {
   margin: 0;
   background: var(--color-bg);
@@ -47,6 +60,9 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #2a2a31;
+}
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #c8c8cf;
 }
 
 @keyframes page-in {

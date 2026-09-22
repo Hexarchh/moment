@@ -41,6 +41,8 @@ export const api = {
   getSettings: () => invoke<Settings>("get_settings"),
   setSettings: (settings: Settings) => invoke<void>("set_settings", { settings }),
   setPaused: (paused: boolean) => invoke<void>("set_paused", { paused }),
+  getAutostart: () => invoke<boolean>("get_autostart"),
+  setAutostart: (enabled: boolean) => invoke<void>("set_autostart", { enabled }),
 };
 
 /** 秒 → "3小时24分" / "18分" / "42秒" */
