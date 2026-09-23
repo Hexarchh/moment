@@ -1,6 +1,7 @@
 import type { Bar } from "../lib/api";
 import { formatDuration } from "../lib/api";
 import { categories, type CategoryId } from "../design/categories";
+import { UsageChartAxis, usageChartMax } from "./UsageChartAxis";
 
 export function WeeklyUsageChart({
   bars,
@@ -9,7 +10,7 @@ export function WeeklyUsageChart({
   bars: Bar[];
   todayCategories?: Partial<Record<CategoryId, number>>;
 }) {
-  const max = Math.max(3600, ...bars.map((bar) => bar.total_secs));
+  const max = usageChartMax(bars.map((bar) => bar.total_secs));
   const average = bars.length ? bars.reduce((sum, bar) => sum + bar.total_secs, 0) / bars.length : 0;
   const todayTotal = todayCategories ? Object.values(todayCategories).reduce((sum, value) => sum + (value ?? 0), 0) : 0;
   return (
@@ -34,6 +35,7 @@ export function WeeklyUsageChart({
             );
           })}
         </div>
+        {bars.some((bar) => bar.total_secs > 0) && <UsageChartAxis max={max} />}
       </div>
       <div className="weekly-labels">{bars.map((bar, index) => <span key={`${bar.label}-${index}`} className={index === bars.length - 1 ? "current" : ""}>{bar.label.split(" ")[0]}</span>)}</div>
     </div>

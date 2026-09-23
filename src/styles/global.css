@@ -82,15 +82,20 @@ html.light .segmented-control button.is-selected { background: #fff; color: #1c1
 .chart-heading h3 { margin: 0; color: var(--color-text); font-size: 14px; font-weight: 600; }
 .chart-heading > span { color: var(--color-faint); font-size: 12px; font-variant-numeric: tabular-nums; }
 .weekly-plot, .hourly-plot { position: relative; height: 88px; }
-.chart-grid { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; }
+.chart-grid { position: absolute; inset: 0 54px 0 0; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; }
 .chart-grid i { display: block; width: 100%; height: 1px; background: var(--color-border); }
-.average-line { position: absolute; left: 0; right: 0; border-top: 1px dashed var(--color-muted); opacity: 0.7; pointer-events: none; }
-.weekly-bars, .hourly-bars { position: absolute; inset: 0; display: flex; align-items: stretch; }
+.average-line { position: absolute; left: 0; right: 54px; border-top: 1px dashed var(--color-muted); opacity: 0.7; pointer-events: none; }
+.weekly-bars, .hourly-bars { position: absolute; inset: 0 54px 0 0; display: flex; align-items: stretch; }
+.chart-axis { position: absolute; inset: 0 0 0 auto; width: 46px; color: var(--color-faint); font-size: 11px; font-variant-numeric: tabular-nums; pointer-events: none; }
+.chart-axis span { position: absolute; right: 0; white-space: nowrap; }
+.chart-axis span:first-child { top: 0; transform: translateY(-50%); }
+.chart-axis span:nth-child(2) { top: 50%; transform: translateY(-50%); }
+.chart-axis span:last-child { bottom: 0; transform: translateY(50%); }
 .weekly-day { flex: 1; display: flex; align-items: flex-end; justify-content: center; padding: 0 12px; }
 .weekly-column { width: min(100%, 38px); display: flex; flex-direction: column-reverse; overflow: hidden; border-radius: 4px 4px 0 0; background: #414144; }
 .weekly-column.today { background: #0a84ff; }
 .weekly-column > span { width: 100%; display: block; flex: 0 0 auto; }
-.weekly-labels { display: flex; margin-top: 9px; }
+.weekly-labels { display: flex; margin-top: 9px; padding-right: 54px; }
 .weekly-labels span { flex: 1; text-align: center; color: var(--color-faint); font-size: 12px; }
 .weekly-labels span.current { color: var(--color-text); font-weight: 600; }
 .hourly-block .chart-heading { margin-bottom: 12px; }
@@ -98,7 +103,7 @@ html.light .segmented-control button.is-selected { background: #fff; color: #1c1
 .hourly-bars { gap: 4px; }
 .hour-slot { flex: 1; min-width: 0; display: flex; align-items: flex-end; }
 .hour-bar { width: 100%; min-height: 0; border-radius: 2px 2px 0 0; background: #0a84ff; }
-.hourly-labels { display: flex; justify-content: space-between; margin-top: 8px; color: var(--color-faint); font-size: 12px; font-variant-numeric: tabular-nums; }
+.hourly-labels { display: flex; justify-content: space-between; margin-top: 8px; padding-right: 54px; color: var(--color-faint); font-size: 12px; font-variant-numeric: tabular-nums; }
 .category-summary { display: flex; flex-wrap: wrap; column-gap: 24px; row-gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--color-border); }
 .category-stat { display: flex; flex-direction: column; gap: 4px; min-width: 90px; }
 .category-name { display: inline-flex; align-items: center; gap: 7px; color: var(--color-muted); font-size: 12px; white-space: nowrap; }
