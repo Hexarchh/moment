@@ -4,6 +4,18 @@
 
 #[cfg(target_os = "linux")]
 pub mod icon;
+#[cfg(not(target_os = "linux"))]
+pub(crate) mod icon {
+    //! 非 Linux 平台的图标解析占位: 统一返回 None, 前端回退字母头像
+    #[derive(Debug, Clone, serde::Serialize)]
+    pub struct IconData {
+        pub mime: String,
+        pub data: String,
+    }
+    pub fn resolve_app_icon(_app_key: &str) -> Option<IconData> {
+        None
+    }
+}
 #[cfg(target_os = "linux")]
 pub mod wayland;
 #[cfg(target_os = "linux")]
@@ -13,7 +25,6 @@ pub(crate) mod windows;
 #[cfg(any(target_os = "linux", target_os = "windows"))]
 pub(crate) mod polling;
 
-#[cfg(target_os = "linux")]
 pub use icon::{resolve_app_icon, IconData};
 
 // 交叉类型检查: 在任意宿主上 `RUSTFLAGS='--cfg xcheck' cargo check`
