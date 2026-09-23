@@ -18,7 +18,9 @@ export type Overview = {
   total_secs: number;
   compare_secs: number;
   bars: Bar[];
+  weekly_bars: Bar[];
   top_apps: AppUsage[];
+  category_apps: AppUsage[];
   paused: boolean;
 };
 
@@ -64,8 +66,7 @@ export function deltaPercent(current: number, compare: number): number | null {
 
 // 应用色: 对 app_key 稳定哈希到一组低饱和色板
 const PALETTE = [
-  "#5e6ad2", "#7c66dc", "#d9578f", "#e0823d", "#d9a13d",
-  "#4cb782", "#3d9bc4", "#8ba34d", "#b06ab3", "#5a9ea6",
+  "#0a84ff", "#64d2ff", "#bf5af2", "#ff9f0a", "#8e8e93",
 ];
 
 export function appColor(appKey: string): string {

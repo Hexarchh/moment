@@ -1,0 +1,15 @@
+export const colors = {
+  background: "#080808",
+  surface: "#1c1c1e",
+  secondary: "#242426",
+  hover: "#2c2c2e",
+  text: "#f5f5f7",
+  muted: "#98989d",
+  faint: "#636366",
+  divider: "rgba(255,255,255,0.08)",
+  social: "#0a84ff",
+  productivity: "#64d2ff",
+  entertainment: "#bf5af2",
+  reading: "#ff9f0a",
+  other: "#8e8e93",
+} as const;

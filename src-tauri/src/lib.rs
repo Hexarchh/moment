@@ -95,7 +95,15 @@ fn setup_state() -> AppState {
     state
 }
 
-/// ~/.local/share/moment (XDG_DATA_HOME)
+/// Windows: %LOCALAPPDATA%\Moment；Linux: ~/.local/share/moment。
+#[cfg(target_os = "windows")]
+fn dirs_data_dir() -> Option<std::path::PathBuf> {
+    std::env::var_os("LOCALAPPDATA")
+        .or_else(|| std::env::var_os("APPDATA"))
+        .map(|dir| std::path::PathBuf::from(dir).join("Moment"))
+}
+
+#[cfg(not(target_os = "windows"))]
 fn dirs_data_dir() -> Option<std::path::PathBuf> {
     std::env::var_os("XDG_DATA_HOME")
         .filter(|v| !v.is_empty())

@@ -13,7 +13,7 @@
 ```
 ┌─────────────────────────────────────────────────────┐
 │ 前端 React (展示层)                                    │
-│   pages/ Overview·Timeline·Apps·Settings              │
+│   pages/ Overview·Apps·Settings                       │
 │   仅在页面挂载/窗口聚焦时 invoke，无高频定时器            │
 └──────────────┬──────────────────────────────────────┘
                │ invoke (低频: 20s 轮询 + focus 事件)
@@ -61,9 +61,10 @@ src-tauri/src/
   commands/mod.rs   # Tauri command 薄壳 ✅
 src/
   lib/api.ts        # 类型化 invoke + 格式化工具 ✅
-  pages/            # Overview / Timeline / Apps / Settings ✅
+  pages/            # Overview / Apps / Settings ✅
   components/       # Sidebar ✅
-  styles/global.css # 设计系统 tokens ✅
+  design/           # colors / spacing / typography / radius ✅
+  styles/global.css # 主题变量与组件样式 ✅
 ```
 
 ## ② 技术选型及理由
@@ -144,9 +145,9 @@ meta(key PK, value)          -- schema_version，版本化迁移
 
 ## ⑥ UI 页面结构
 
-设计系统（global.css `@theme` tokens）：背景 `#0d0d0f`、卡片 `#16161a`、边框 `#232329`（低对比 1px、无阴影）、圆角 card 10px / control 8px、系统字体栈、数据用 tabular-nums + 加重字重、动效仅 150ms hover/页面入场。深色优先，浅色后置。**界面全中文**（含托盘菜单：打开主界面 / 暂停统计 / 退出）。
+设计系统（`src/design` 与 `global.css`）：背景 `#080808`、主卡 `#1c1c1e`、低对比分割线、核心卡圆角 26px / 普通容器 16px、系统字体栈与 tabular-nums；交互动效 150–180ms。深色优先，保留浅色主题。**界面全中文**（含托盘菜单：打开主界面 / 暂停统计 / 退出）。
 
-- **概览** ✅：今日/近7天/近30天切换 · 总时长大数字 + 较昨日(上一周期) ↑↓百分比 · 逐时(24根)/逐日柱状 · 最常用应用（真实图标 + 百分比 + 进度条）· 暂停横幅 · 20s 轮询 + 聚焦刷新
+- **概览** ✅：今天/每周切换 · 总时长大数字 + 上期对比 · 今日同时展示近 7 天趋势和逐时活动 · 周视图展示日均与每日趋势 · 应用分类（已识别标识自动归类，其余为「其他」）· 最常用应用列表 · 暂停提示 · 20s 轮询 + 聚焦刷新
 - **应用** ✅：7/30 天切换 · 总时长 · 排行榜（图标/百分比/条形）· 点击展开单应用近 30 天趋势
 - **设置** ✅：暂停开关 · 空闲阈值（分钟）· 隐私声明（本地 SQLite，无云端/账号/遥测）
 - 侧栏 ✅：概览/应用/设置，Lucide 图标

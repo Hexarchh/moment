@@ -3,6 +3,10 @@ import { Toggle } from "../components/Toggle";
 import { api, type Settings as SettingsData } from "../lib/api";
 
 type Theme = "dark" | "light";
+const isWindows = /Windows/i.test(navigator.userAgent);
+const dataPath = isWindows
+  ? "%LOCALAPPDATA%\\Moment\\moment.db"
+  : "~/.local/share/moment/moment.db";
 
 function initialTheme(): Theme {
   try {
@@ -106,7 +110,7 @@ export function Settings() {
           <p className="max-w-[420px] text-[13px] leading-relaxed text-muted">
             开机自动启动 Moment 并在后台统计
             {autostart === true && (
-              <span className="text-faint">（~/.config/autostart）</span>
+              <span className="text-faint">{isWindows ? "（随 Windows 登录启动）" : "（~/.config/autostart）"}</span>
             )}
           </p>
           <Toggle
@@ -171,7 +175,7 @@ export function Settings() {
         <div className="text-[13px] font-medium">隐私</div>
         <p className="mt-2 max-w-[480px] text-[13px] leading-relaxed text-muted">
           你的数据只保存在这台设备上。所有使用数据存储于本地 SQLite 数据库
-          (<code className="text-text">~/.local/share/moment/moment.db</code>)，
+          (<code className="text-text">{dataPath}</code>)，
           没有账号、没有云端、没有任何遥测——窗口标题与应用使用情况绝不上传。
         </p>
       </div>

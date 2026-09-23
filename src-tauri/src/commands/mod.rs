@@ -30,7 +30,10 @@ pub struct Overview {
     /// 上一可比周期 (今天→昨天; 近7天→前7天; 近30天→前30天)
     pub compare_secs: f64,
     pub bars: Vec<Bar>,
+    /// 今日页同时展示近七天趋势；其他范围复用主图数据
+    pub weekly_bars: Vec<Bar>,
     pub top_apps: Vec<AppUsage>,
+    pub category_apps: Vec<AppUsage>,
     pub paused: bool,
 }
 
@@ -107,14 +110,30 @@ pub fn overview(state: State<'_, AppState>, range: Option<String>) -> AppResult<
     let (p_start, p_end) = prev_bounds;
     let total_secs = db.with(|c| repo::total_between(c, &start, &end))?;
     let compare_secs = db.with(|c| repo::total_between(c, &p_start, &p_end))?;
-    let top_apps = db.with(|c| repo::app_totals_between(c, &start, &end, 5))?;
+    let category_apps = db.with(|c| repo::app_totals_between(c, &start, &end, 500))?;
+    let top_apps = category_apps.iter().take(5).cloned().collect();
+    let weekly_bars = if range == "today" {
+        let mut days = Vec::with_capacity(7);
+        for i in (0..7).rev() {
+            let (s, e) = day_bounds(i);
+            days.push(Bar {
+                label: day_label(i, true),
+                total_secs: db.with(|c| repo::total_between(c, &s, &e))?,
+            });
+        }
+        days
+    } else {
+        bars.clone()
+    };
 
     Ok(Overview {
         range: range.to_string(),
         total_secs,
         compare_secs,
         bars,
+        weekly_bars,
         top_apps,
+        category_apps,
         paused: state.is_paused(),
     })
 }
