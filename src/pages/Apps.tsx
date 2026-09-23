@@ -170,7 +170,7 @@ function AppTrend({ appId, appKey }: { appId: number; appKey: string }) {
             <div
               key={i}
               title={`${b.label} · ${formatDuration(b.total_secs)}`}
-              className="flex-1 rounded-[2px]"
+              className={`flex-1 rounded-[2px] ${b.total_secs > 0 ? "app-trend-bar" : ""}`}
               style={{
                 height: Math.max(3, (b.total_secs / max) * 64),
                 background: color,
