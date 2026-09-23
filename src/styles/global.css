@@ -102,9 +102,10 @@ html.light .segmented-control button.is-selected { background: #fff; color: #1c1
 .hourly-plot { height: 64px; }
 .hourly-bars { gap: 4px; }
 .hour-slot { flex: 1; min-width: 0; display: flex; align-items: flex-end; }
-.hour-bar { width: 100%; min-height: 0; border-radius: 2px 2px 0 0; background: #0a84ff; transform-origin: center bottom; transition: transform 150ms ease-out, filter 150ms ease-out; }
-.hour-bar:hover { transform: scale(1.045); filter: brightness(1.1); }
-@media (prefers-reduced-motion: reduce) { .hour-bar { transition: none; } }
+.hour-bar { width: 100%; min-height: 0; border-radius: 2px 2px 0 0; background: #0a84ff; }
+.weekly-column, .hour-bar { transform-origin: center bottom; transition: transform 150ms ease-out, filter 150ms ease-out; }
+.weekly-column:hover, .hour-bar:hover { transform: scale(1.045); filter: brightness(1.1); }
+@media (prefers-reduced-motion: reduce) { .weekly-column, .hour-bar { transition: none; } }
 .hourly-labels { display: flex; justify-content: space-between; margin-top: 8px; padding-right: 54px; color: var(--color-faint); font-size: 12px; font-variant-numeric: tabular-nums; }
 .category-summary { display: flex; flex-wrap: wrap; column-gap: 24px; row-gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--color-border); }
 .category-stat { display: flex; flex-direction: column; gap: 4px; min-width: 90px; }
