@@ -6,6 +6,10 @@ on:
   push:
     tags: ["v*"]
 
+# tauri-action 需要写权限创建 Release 并上传资产
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:
