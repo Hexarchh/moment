@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Sidebar, type PageId } from "./components/Sidebar";
 import { Overview } from "./pages/Overview";
+import { DailyPlan } from "./pages/DailyPlan";
 import { Apps } from "./pages/Apps";
 import { Settings } from "./pages/Settings";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -28,7 +29,8 @@ export default function App() {
       <div className="app-content">
         <Sidebar active={page} onSelect={setPage} />
         <main key={page} className="main-content">
-          {page === "overview" && <Overview period={period} onOpenApps={() => setPage("apps")} />}
+          {page === "overview" && <Overview period={period} onOpenApps={() => setPage("apps")} onOpenPlan={() => setPage("plan")} />}
+          {page === "plan" && <DailyPlan />}
           {page === "apps" && <Apps />}
           {page === "settings" && <Settings />}
         </main>

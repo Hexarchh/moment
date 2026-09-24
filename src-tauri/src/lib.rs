@@ -71,7 +71,12 @@ pub fn run() {
             commands::set_settings,
             commands::set_paused,
             commands::get_autostart,
-            commands::set_autostart
+            commands::set_autostart,
+            commands::plan_tasks,
+            commands::plan_add,
+            commands::plan_toggle,
+            commands::plan_save,
+            commands::plan_delete
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

@@ -28,6 +28,17 @@ export type Settings = {
   idle_timeout_secs: number;
 };
 
+export type PlanTask = {
+  id: number;
+  date: string; // 本地日期 YYYY-MM-DD
+  title: string;
+  completed: boolean;
+  estimated_minutes: number | null;
+  note: string | null;
+  created_at: string;
+  completed_at: string | null;
+};
+
 export type IconData = {
   mime: string;
   data: string;
@@ -45,7 +56,32 @@ export const api = {
   setPaused: (paused: boolean) => invoke<void>("set_paused", { paused }),
   getAutostart: () => invoke<boolean>("get_autostart"),
   setAutostart: (enabled: boolean) => invoke<void>("set_autostart", { enabled }),
+  planTasks: (date?: string) => invoke<PlanTask[]>("plan_tasks", { date }),
+  planAdd: (date: string, title: string, estimatedMinutes: number | null, note: string | null) =>
+    invoke<PlanTask>("plan_add", { date, title, estimatedMinutes, note }),
+  planToggle: (id: number, completed: boolean) =>
+    invoke<PlanTask>("plan_toggle", { id, completed }),
+  planSave: (id: number, title: string, estimatedMinutes: number | null, note: string | null) =>
+    invoke<PlanTask>("plan_save", { id, title, estimatedMinutes, note }),
+  planDelete: (id: number) => invoke<void>("plan_delete", { id }),
 };
+
+/** 本地日期 → YYYY-MM-DD (默认今天; offsetDays 正数为过去) */
+export function localDateString(offsetDays = 0, base = new Date()): string {
+  const d = new Date(base);
+  d.setDate(d.getDate() - offsetDays);
+  const m = `${d.getMonth() + 1}`.padStart(2, "0");
+  const day = `${d.getDate()}`.padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
+/** 分钟 → "2 小时" / "1 小时 30 分" / "30 分钟" */
+export function formatMinutes(mins: number): string {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h > 0) return m > 0 ? `${h} 小时 ${m} 分` : `${h} 小时`;
+  return `${m} 分钟`;
+}
 
 /** 秒 → "3小时24分" / "18分" / "42秒" */
 export function formatDuration(secs: number): string {

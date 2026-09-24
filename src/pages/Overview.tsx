@@ -4,11 +4,12 @@ import { CategorySummary, categoryTotals } from "../components/CategorySummary";
 import { HourlyActivityChart } from "../components/HourlyActivityChart";
 import { ScreenTimeSummary } from "../components/ScreenTimeSummary";
 import { WeeklyUsageChart } from "../components/WeeklyUsageChart";
+import { TodayPlanCard } from "../components/TodayPlanCard";
 import { api, formatDuration, type Overview as OverviewData } from "../lib/api";
 
 type Period = "today" | "7d";
 
-export function Overview({ period, onOpenApps }: { period: Period; onOpenApps: () => void }) {
+export function Overview({ period, onOpenApps, onOpenPlan }: { period: Period; onOpenApps: () => void; onOpenPlan: () => void }) {
   const [data, setData] = useState<OverviewData | null>(null);
   const [error, setError] = useState(false);
 
@@ -47,6 +48,8 @@ export function Overview({ period, onOpenApps }: { period: Period; onOpenApps: (
 
       {data?.paused && <div className="paused-note">统计已暂停，使用时间暂不累计。</div>}
       {error && !data && <div className="paused-note">暂时无法读取使用记录，请稍后重试。</div>}
+
+      {period === "today" && <TodayPlanCard onOpenPlan={onOpenPlan} />}
 
       <div className="overview-grid">
         <section className="screen-time-card" aria-label="屏幕时间统计">

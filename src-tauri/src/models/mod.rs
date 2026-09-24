@@ -20,6 +20,20 @@ pub struct Settings {
     pub idle_timeout_secs: u64,
 }
 
+/// 每日计划的一条任务。date 为本地日期 (YYYY-MM-DD), 与时间戳体系无关。
+/// 第一阶段只有标题/完成/预估/备注; 「任务 ↔ 应用」关联等留待后续扩展。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlanTask {
+    pub id: i64,
+    pub date: String,
+    pub title: String,
+    pub completed: bool,
+    pub estimated_minutes: Option<i64>,
+    pub note: Option<String>,
+    pub created_at: String,
+    pub completed_at: Option<String>,
+}
+
 impl Default for Settings {
     fn default() -> Self {
         Self {

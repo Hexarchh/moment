@@ -2,7 +2,7 @@
 
 use crate::error::AppResult;
 
-const SCHEMA_VERSION: i64 = 2;
+const SCHEMA_VERSION: i64 = 3;
 
 pub fn migrate(conn: &rusqlite::Connection) -> AppResult<()> {
     conn.execute_batch(
@@ -33,13 +33,25 @@ pub fn migrate(conn: &rusqlite::Connection) -> AppResult<()> {
             ended_at TEXT NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_idle_started ON idle_periods(started_at);
+        CREATE TABLE IF NOT EXISTS daily_tasks (
+            id INTEGER PRIMARY KEY,
+            date TEXT NOT NULL,
+            title TEXT NOT NULL,
+            completed INTEGER NOT NULL DEFAULT 0,
+            estimated_minutes INTEGER,
+            note TEXT,
+            created_at TEXT NOT NULL,
+            completed_at TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_daily_tasks_date ON daily_tasks(date);
         CREATE TABLE IF NOT EXISTS settings (
             key TEXT PRIMARY KEY,
             value TEXT NOT NULL
         );",
     )?;
 
-    // 结构变更按 old_version 分支增量执行; v2 新增 idle_periods (空闲单独记录)
+    // 结构变更按 old_version 分支增量执行;
+    // v2 新增 idle_periods (空闲单独记录), v3 新增 daily_tasks (每日计划)
     let current: i64 = conn
         .query_row(
             "SELECT value FROM meta WHERE key = 'schema_version'",

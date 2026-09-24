@@ -182,4 +182,15 @@ P2 进展（2026-09-23）：
 
 已移除：Timeline 页面及其 `timeline` 命令/会话明细查询（按需求，2026-09-23）；macOS 实现（用户要求暂缓）。
 
-验证记录：14 个单测全绿（15 连跑无偶发；修复过并行测试临时库路径冲突）、clippy 0 警告、tsc+vite 通过、v1→v2 数据库原地迁移验证、图标解析全命中、Windows 源码交叉类型检查通过（含注入错误的阳性对照）。
+## ⑨ 每日计划 (Daily Plan, 2026-09-24)
+
+定位：Plan your day → Track your time → Review your day。轻量每日备忘，非项目管理。
+刻意不做：标签/项目/子任务/优先级/看板/重复任务/提醒/云同步。
+
+- **Schema v3**：`daily_tasks(id, date 'YYYY-MM-DD', title, completed, estimated_minutes?, note?, created_at, completed_at?)` + `INDEX(date)`；未完成在前（创建序）、已完成在后（完成时间）。`completed` 翻转同步写/清 `completed_at`。
+- **命令**：`plan_tasks(date?) / plan_add / plan_toggle / plan_save / plan_delete`（标题去空白非空校验；estimated 范围 1–1440，0/null 即无预估）。
+- **UI**：单容器任务列表（`plan-*` 语义类，沿用卡片/圆角/150ms 规范）；圆形勾选（:active 1→1.08 缩放）；完成态灰字+1px 删除线；行内编辑（Enter 保存/Esc 取消）；hover 出 ⋯ 菜单（编辑/删除）；空态「还没有计划」；Enter 连续快速录入；日期 ‹/› 切换可回看/预写任意日期；行聚焦 Delete 删除。
+- **与屏幕时间联动**：计划页底部今日小结（计划时长 · 已完成 · 屏幕时间，仅今天）；概览页今日视图顶部「今日计划」小卡（前 4 项 + `x / y 已完成` + 跳转）。
+- 性能：无轮询，仅页面挂载读取 + 变更即存（单行写）。「任务 ↔ 应用」自动关联预留于数据结构，未实现。
+
+验证记录：14 个单测全绿（15 连跑无偶发；修复过并行测试临时库路径冲突）、clippy 0 警告、tsc+vite 通过、v1→v2→v3 数据库原地迁移验证、图标解析全命中、Windows 源码交叉类型检查通过（含注入错误的阳性对照）；daily_tasks CRUD/排序/时间戳单测覆盖。

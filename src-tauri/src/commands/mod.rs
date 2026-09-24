@@ -7,7 +7,7 @@ use tauri::{AppHandle, State};
 
 use crate::database::repo;
 use crate::error::{AppError, AppResult};
-use crate::models::{AppUsage, Settings};
+use crate::models::{AppUsage, PlanTask, Settings};
 use crate::state::AppState;
 
 #[tauri::command]
@@ -175,6 +175,85 @@ pub fn set_settings(state: State<'_, AppState>, settings: Settings) -> AppResult
 #[tauri::command]
 pub fn app_icon(app_key: String) -> Option<crate::platform::IconData> {
     crate::platform::resolve_app_icon(&app_key)
+}
+
+// ---------- 每日计划 ----------
+
+/// 校验本地日期格式 YYYY-MM-DD
+fn parse_plan_date(date: &str) -> AppResult<String> {
+    chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d")
+        .map(|_| date.to_string())
+        .map_err(|_| AppError::Message(format!("非法日期: {date}")))
+}
+
+/// 某日任务列表 (默认今天)
+#[tauri::command]
+pub fn plan_tasks(state: State<'_, AppState>, date: Option<String>) -> AppResult<Vec<PlanTask>> {
+    let date = match date {
+        Some(d) => parse_plan_date(&d)?,
+        None => Local::now().date_naive().to_string(),
+    };
+    state.db().with(|c| repo::list_plan_tasks(c, &date))
+}
+
+/// 新建任务; title 去空白后非空
+#[tauri::command]
+pub fn plan_add(
+    state: State<'_, AppState>,
+    date: String,
+    title: String,
+    estimated_minutes: Option<i64>,
+    note: Option<String>,
+) -> AppResult<PlanTask> {
+    let title = title.trim().to_string();
+    if title.is_empty() {
+        return Err(AppError::Message("任务标题不能为空".to_string()));
+    }
+    let date = parse_plan_date(&date)?;
+    state.db().with(|c| {
+        repo::insert_plan_task(
+            c,
+            &date,
+            &title,
+            estimated_minutes.filter(|m| (1..=24 * 60).contains(m)),
+            note.as_deref(),
+        )
+    })
+}
+
+/// 完成 / 取消完成
+#[tauri::command]
+pub fn plan_toggle(state: State<'_, AppState>, id: i64, completed: bool) -> AppResult<PlanTask> {
+    state.db().with(|c| repo::set_plan_task_completed(c, id, completed))
+}
+
+/// 编辑保存 (文本字段全量; estimated/note 传 null 即清除)
+#[tauri::command]
+pub fn plan_save(
+    state: State<'_, AppState>,
+    id: i64,
+    title: String,
+    estimated_minutes: Option<i64>,
+    note: Option<String>,
+) -> AppResult<PlanTask> {
+    let title = title.trim().to_string();
+    if title.is_empty() {
+        return Err(AppError::Message("任务标题不能为空".to_string()));
+    }
+    state.db().with(|c| {
+        repo::save_plan_task(
+            c,
+            id,
+            &title,
+            estimated_minutes.filter(|m| (1..=24 * 60).contains(m)),
+            note.as_deref().map(str::trim).filter(|n| !n.is_empty()),
+        )
+    })
+}
+
+#[tauri::command]
+pub fn plan_delete(state: State<'_, AppState>, id: i64) -> AppResult<()> {
+    state.db().with(|c| repo::delete_plan_task(c, id))
 }
 
 /// 设置页/托盘共用的暂停开关; 同步托盘菜单文案

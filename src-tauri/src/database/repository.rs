@@ -2,7 +2,7 @@
 
 use chrono::{DateTime, SecondsFormat, Utc};
 
-use crate::models::{AppUsage, Settings};
+use crate::models::{AppUsage, PlanTask, Settings};
 
 /// 统一时间戳序列化: RFC3339 UTC 毫秒, 字典序可比较
 fn ts(dt: &DateTime<Utc>) -> String {
@@ -107,6 +107,98 @@ pub fn insert_idle_period(
         rusqlite::params![ts(started_at), ts(ended_at)],
     )?;
     Ok(())
+}
+
+// ---------- 每日计划 ----------
+
+/// 某天的任务: 未完成在前 (按创建序), 已完成在后 (按完成时间)
+pub fn list_plan_tasks(conn: &rusqlite::Connection, date: &str) -> rusqlite::Result<Vec<PlanTask>> {
+    let mut stmt = conn.prepare(
+        "SELECT id, date, title, completed, estimated_minutes, note, created_at, completed_at
+         FROM daily_tasks WHERE date = ?1
+         ORDER BY completed, CASE WHEN completed THEN completed_at ELSE created_at END",
+    )?;
+    let rows = stmt.query_map([date], plan_task_row)?;
+    rows.collect()
+}
+
+pub fn insert_plan_task(
+    conn: &rusqlite::Connection,
+    date: &str,
+    title: &str,
+    estimated_minutes: Option<i64>,
+    note: Option<&str>,
+) -> rusqlite::Result<PlanTask> {
+    conn.execute(
+        "INSERT INTO daily_tasks (date, title, estimated_minutes, note, created_at)
+         VALUES (?1, ?2, ?3, ?4, ?5)",
+        rusqlite::params![
+            date,
+            title,
+            estimated_minutes.filter(|&m| m > 0),
+            note.filter(|n| !n.is_empty()),
+            ts(&Utc::now())
+        ],
+    )?;
+    get_plan_task(conn, conn.last_insert_rowid())
+}
+
+/// 勾选切换: 完成写 completed_at, 取消完成清空
+pub fn set_plan_task_completed(
+    conn: &rusqlite::Connection,
+    id: i64,
+    completed: bool,
+) -> rusqlite::Result<PlanTask> {
+    conn.execute(
+        "UPDATE daily_tasks SET
+            completed = ?2,
+            completed_at = CASE WHEN ?2 THEN ?3 ELSE NULL END
+         WHERE id = ?1",
+        rusqlite::params![id, completed, ts(&Utc::now())],
+    )?;
+    get_plan_task(conn, id)
+}
+
+/// 编辑保存: 文本字段全量写入 (estimated None / note None 即清除)
+pub fn save_plan_task(
+    conn: &rusqlite::Connection,
+    id: i64,
+    title: &str,
+    estimated_minutes: Option<i64>,
+    note: Option<&str>,
+) -> rusqlite::Result<PlanTask> {
+    conn.execute(
+        "UPDATE daily_tasks SET title = ?2, estimated_minutes = ?3, note = ?4 WHERE id = ?1",
+        rusqlite::params![id, title, estimated_minutes, note],
+    )?;
+    get_plan_task(conn, id)
+}
+
+pub fn delete_plan_task(conn: &rusqlite::Connection, id: i64) -> rusqlite::Result<()> {
+    conn.execute("DELETE FROM daily_tasks WHERE id = ?1", [id])?;
+    Ok(())
+}
+
+fn get_plan_task(conn: &rusqlite::Connection, id: i64) -> rusqlite::Result<PlanTask> {
+    conn.query_row(
+        "SELECT id, date, title, completed, estimated_minutes, note, created_at, completed_at
+         FROM daily_tasks WHERE id = ?1",
+        [id],
+        plan_task_row,
+    )
+}
+
+fn plan_task_row(r: &rusqlite::Row<'_>) -> rusqlite::Result<PlanTask> {
+    Ok(PlanTask {
+        id: r.get(0)?,
+        date: r.get(1)?,
+        title: r.get(2)?,
+        completed: r.get::<_, i64>(3)? != 0,
+        estimated_minutes: r.get(4)?,
+        note: r.get(5)?,
+        created_at: r.get(6)?,
+        completed_at: r.get(7)?,
+    })
 }
 
 // ---------- 读路径 (统计) ----------
@@ -284,5 +376,45 @@ mod tests {
             .query_row("SELECT COUNT(*) FROM sessions WHERE ended_at IS NULL", [], |r| r.get(0))
             .unwrap();
         assert_eq!(still_open, 0);
+    }
+
+    #[test]
+    fn plan_task_crud_and_ordering() {
+        let conn = db();
+        let a = insert_plan_task(&conn, "2026-09-24", "完成 PA2", Some(120), Some("先看第 3 题")).unwrap();
+        let b = insert_plan_task(&conn, "2026-09-24", "学习 vLLM", Some(60), None).unwrap();
+        let c = insert_plan_task(&conn, "2026-09-25", "提前写的明天任务", None, None).unwrap();
+        assert!(!a.completed && a.estimated_minutes == Some(120));
+        assert_eq!(a.date, "2026-09-24");
+
+        // 完成写 completed_at, 取消清空
+        let a = set_plan_task_completed(&conn, a.id, true).unwrap();
+        assert!(a.completed);
+        assert!(a.completed_at.is_some());
+        let a = set_plan_task_completed(&conn, a.id, false).unwrap();
+        assert!(a.completed_at.is_none());
+
+        // 未完成在前 (创建序), 完成在后
+        set_plan_task_completed(&conn, b.id, true).unwrap();
+        let today: Vec<String> = list_plan_tasks(&conn, "2026-09-24")
+            .unwrap()
+            .iter()
+            .map(|t| t.title.clone())
+            .collect();
+        assert_eq!(today, vec!["完成 PA2", "学习 vLLM"], "已完成的 b 排到后面");
+        assert_eq!(list_plan_tasks(&conn, "2026-09-25").unwrap().len(), 1);
+        assert_eq!(list_plan_tasks(&conn, "2026-09-26").unwrap().len(), 0);
+        let _ = c;
+
+        // 编辑全量保存: 清除预估/备注
+        save_plan_task(&conn, a.id, "完成 PA2 (重写)", None, None).unwrap();
+        let a = list_plan_tasks(&conn, "2026-09-24").unwrap().remove(0);
+        assert_eq!(a.title, "完成 PA2 (重写)");
+        assert_eq!(a.estimated_minutes, None);
+        assert_eq!(a.note, None);
+
+        // 删除
+        delete_plan_task(&conn, b.id).unwrap();
+        assert_eq!(list_plan_tasks(&conn, "2026-09-24").unwrap().len(), 1);
     }
 }

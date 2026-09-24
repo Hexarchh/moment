@@ -1,9 +1,10 @@
-import { ChartNoAxesColumn, AppWindow, Settings } from "lucide-react";
+import { ChartNoAxesColumn, ListChecks, AppWindow, Settings } from "lucide-react";
 
-export type PageId = "overview" | "apps" | "settings";
+export type PageId = "overview" | "plan" | "apps" | "settings";
 
 const NAV = [
   { id: "overview", label: "概览", icon: ChartNoAxesColumn },
+  { id: "plan", label: "每日计划", icon: ListChecks },
   { id: "apps", label: "应用", icon: AppWindow },
 ] as const;
 

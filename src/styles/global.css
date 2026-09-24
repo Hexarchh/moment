@@ -130,5 +130,66 @@ html.light .segmented-control button.is-selected { background: #fff; color: #1c1
 
 @keyframes page-in { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: none; } }
 .page-enter { animation: page-in 180ms ease-out; }
+
+/* ---------- 每日计划 ---------- */
+.plan-page { max-width: 760px; margin: 0 auto; padding: 26px 32px 48px; }
+.plan-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
+.plan-header h1 { margin: 0; font-size: 22px; font-weight: 650; line-height: 1.25; letter-spacing: -0.025em; }
+.plan-nav { display: flex; align-items: center; gap: 2px; margin-top: 3px; }
+.plan-nav button { height: 28px; min-width: 28px; padding: 0 6px; border-radius: 8px; background: transparent; color: var(--color-muted); font-size: 15px; line-height: 1; transition: background 150ms, color 150ms; }
+.plan-nav button:hover:not(:disabled) { background: var(--color-surface); color: var(--color-text); }
+.plan-nav button:disabled { opacity: 0.3; cursor: default; }
+.plan-date-chip { min-width: 118px; padding: 0 6px; text-align: center; font-size: 13px; color: var(--color-muted); font-variant-numeric: tabular-nums; }
+.plan-stats { margin-top: 5px; }
+.plan-list { margin-top: 20px; overflow: hidden; background: var(--color-card); border-radius: 16px; }
+.plan-task { position: relative; display: flex; align-items: flex-start; gap: 14px; padding: 13px 16px; transition: background 150ms; }
+.plan-task:hover { background: var(--color-surface); }
+.plan-task + .plan-task::before { content: ""; position: absolute; top: 0; left: 52px; right: 16px; height: 1px; background: var(--color-border); }
+.plan-check { flex: 0 0 auto; width: 21px; height: 21px; margin-top: 1px; border: 1.5px solid var(--color-faint); border-radius: 50%; background: transparent; color: transparent; display: grid; place-items: center; transition: border-color 150ms, background 150ms, color 150ms, transform 150ms; }
+.plan-check:hover { border-color: var(--color-accent); }
+.plan-check:active { transform: scale(1.08); }
+.plan-check.done { border-color: var(--color-accent); background: var(--color-accent); color: #fff; }
+.plan-body { flex: 1; min-width: 0; }
+.plan-title { padding: 0; border: 0; background: transparent; color: var(--color-text); display: block; width: 100%; text-align: left; font-size: 15px; font-weight: 500; line-height: 1.45; transition: color 150ms; }
+.plan-title:hover { color: var(--color-accent); }
+.plan-task.done .plan-title { color: var(--color-faint); text-decoration: line-through; text-decoration-thickness: 1px; }
+.plan-meta { margin-top: 2px; display: flex; gap: 10px; color: var(--color-faint); font-size: 12.5px; }
+.plan-more { position: absolute; top: 10px; right: 12px; width: 26px; height: 26px; border-radius: 7px; background: var(--color-card); color: var(--color-faint); font-size: 16px; font-weight: 700; letter-spacing: 1px; opacity: 0; transition: opacity 150ms, background 150ms, color 150ms; }
+.plan-task:hover .plan-more, .plan-more:focus-visible, .plan-more.open { opacity: 1; }
+.plan-more:hover { color: var(--color-text); }
+.plan-menu { position: absolute; top: 36px; right: 12px; z-index: 5; min-width: 108px; padding: 4px; background: var(--color-card); border: 1px solid var(--color-border); border-radius: 10px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35); }
+html.light .plan-menu { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12); }
+.plan-menu button { display: block; width: 100%; padding: 6px 10px; border-radius: 7px; background: transparent; color: var(--color-text); text-align: left; font-size: 13px; transition: background 150ms; }
+.plan-menu button:hover { background: var(--color-surface); }
+.plan-menu button.danger:hover { color: #ff453a; }
+.plan-input { width: 100%; padding: 6px 10px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-bg); color: var(--color-text); font-size: 14px; font-family: inherit; outline: none; transition: border-color 150ms; }
+.plan-input:focus { border-color: var(--color-accent); }
+.plan-edit-grid { display: grid; grid-template-columns: minmax(0, 1fr) 96px 132px; gap: 8px; align-items: center; }
+.plan-edit-grid .plan-input { padding: 5px 9px; font-size: 13.5px; }
+.plan-add { display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px 16px; background: transparent; color: var(--color-muted); text-align: left; font-size: 14px; transition: background 150ms, color 150ms; }
+.plan-add:hover { background: var(--color-surface); color: var(--color-text); }
+.plan-add .plan-add-mark { width: 21px; text-align: center; font-size: 17px; font-weight: 400; color: var(--color-faint); }
+.plan-add-input { display: flex; align-items: center; gap: 14px; padding: 10px 16px; }
+.plan-add-input .plan-add-mark { flex: 0 0 auto; width: 21px; text-align: center; font-size: 17px; color: var(--color-faint); }
+.plan-empty { padding: 56px 24px; text-align: center; }
+.plan-empty h2 { margin: 0; font-size: 15px; font-weight: 600; color: var(--color-muted); }
+.plan-empty p { margin: 6px 0 18px; font-size: 13px; color: var(--color-faint); }
+.plan-empty button { padding: 7px 16px; border: 1px solid var(--color-border); border-radius: 9px; background: transparent; color: var(--color-text); font-size: 13px; font-weight: 500; transition: background 150ms; }
+.plan-empty button:hover { background: var(--color-surface); }
+.plan-summary { margin-top: 14px; color: var(--color-faint); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+
+/* 首页「今日计划」小卡 */
+.today-plan { margin-bottom: 24px; padding: 20px 32px 14px; background: var(--color-card); border-radius: 26px; }
+.today-plan-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+.today-plan-head h2 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.today-plan-head span { color: var(--color-muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.today-plan-item { display: flex; align-items: center; gap: 11px; padding: 7px 0; }
+.today-plan-item i { flex: 0 0 auto; width: 16px; height: 16px; border: 1.5px solid var(--color-faint); border-radius: 50%; transition: border-color 150ms, background 150ms; }
+.today-plan-item.done i { border-color: var(--color-accent); background: var(--color-accent); box-shadow: inset 0 0 0 2.5px var(--color-card); }
+.today-plan-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; color: var(--color-text); }
+.today-plan-item.done span { color: var(--color-faint); text-decoration: line-through; text-decoration-thickness: 1px; }
+.today-plan-more { margin: 4px 0 0; padding: 3px 0; background: transparent; color: var(--color-faint); font-size: 12.5px; transition: color 150ms; }
+.today-plan-more:hover { color: var(--color-text); }
+@media (max-width: 1020px) { .plan-page { padding-inline: 24px; } .today-plan { padding-inline: 24px; } .plan-edit-grid { grid-template-columns: minmax(0, 1fr) 84px 116px; } }
 @media (max-width: 1020px) { .overview-page { padding-inline: 24px; } .overview-grid { grid-template-columns: minmax(0, 1fr) 268px; gap: 16px; } .screen-time-card { padding-inline: 24px; } .weekly-day { padding-inline: 7px; } .summary-comparison { display: none; } }
 @media (max-width: 850px) { .sidebar { width: 68px; flex-basis: 68px; } .nav-item { justify-content: center; padding: 0; } .nav-item span { display: none; } .overview-grid { grid-template-columns: 1fr; } }
