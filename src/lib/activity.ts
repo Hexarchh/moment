@@ -67,7 +67,6 @@ export function buildActivityModel(
 
   const todayISO = toISO(today);
   const cells: ActivityCell[] = [];
-  const cursor = new Date(start);
   for (let i = 0; i < leading; i++) {
     cells.push({
       key: `pad-head-${i}`,
@@ -77,16 +76,17 @@ export function buildActivityModel(
       level: -1,
     });
   }
-  for (let i = 0; i < totalDays; i++) {
+  // 从对齐后的周一起逐日推进, 直到今天 (含) —— 区间长度 = totalDays + leading
+  const cursor = new Date(start);
+  while (toISO(cursor) <= todayISO) {
     const iso = toISO(cursor);
     const day = byDate.get(iso);
-    const future = iso > todayISO;
     cells.push({
       key: iso,
-      date: future ? null : iso,
+      date: iso,
       screen_time_minutes: day?.screen_time_minutes ?? 0,
       completed_tasks: day?.completed_tasks ?? 0,
-      level: future || !day ? -1 : calculateActivityLevel(day.screen_time_minutes),
+      level: day ? calculateActivityLevel(day.screen_time_minutes) : -1,
     });
     cursor.setDate(cursor.getDate() + 1);
   }
