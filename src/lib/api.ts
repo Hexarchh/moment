@@ -1,4 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
+import type { ActivityDay } from "./activity";
+
+export type { ActivityDay } from "./activity";
 
 // 与后端 command 层的返回结构一一对应 (snake_case)
 export type AppUsage = {
@@ -64,6 +67,7 @@ export const api = {
   planSave: (id: number, title: string, estimatedMinutes: number | null, note: string | null) =>
     invoke<PlanTask>("plan_save", { id, title, estimatedMinutes, note }),
   planDelete: (id: number) => invoke<void>("plan_delete", { id }),
+  activity: (days?: number) => invoke<ActivityDay[]>("activity", { days }),
 };
 
 /** 本地日期 → YYYY-MM-DD (默认今天; offsetDays 正数为过去) */

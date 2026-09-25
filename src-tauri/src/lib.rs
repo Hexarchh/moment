@@ -76,7 +76,8 @@ pub fn run() {
             commands::plan_add,
             commands::plan_toggle,
             commands::plan_save,
-            commands::plan_delete
+            commands::plan_delete,
+            commands::activity
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

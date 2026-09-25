@@ -188,6 +188,20 @@ fn get_plan_task(conn: &rusqlite::Connection, id: i64) -> rusqlite::Result<PlanT
     )
 }
 
+/// 区间内完成时刻列表 (活动热力图分桶用; 本地日归组由调用方做)
+pub fn completed_task_times_between(
+    conn: &rusqlite::Connection,
+    from: &DateTime<Utc>,
+    to: &DateTime<Utc>,
+) -> rusqlite::Result<Vec<String>> {
+    let mut stmt = conn.prepare(
+        "SELECT completed_at FROM daily_tasks
+         WHERE completed_at IS NOT NULL AND completed_at >= ?1 AND completed_at < ?2",
+    )?;
+    let rows = stmt.query_map(rusqlite::params![ts(from), ts(to)], |r| r.get(0))?;
+    rows.collect()
+}
+
 fn plan_task_row(r: &rusqlite::Row<'_>) -> rusqlite::Result<PlanTask> {
     Ok(PlanTask {
         id: r.get(0)?,
@@ -416,5 +430,30 @@ mod tests {
         // 删除
         delete_plan_task(&conn, b.id).unwrap();
         assert_eq!(list_plan_tasks(&conn, "2026-09-24").unwrap().len(), 1);
+    }
+
+    #[test]
+    fn completed_task_times_between_filters_window() {
+        let conn = db();
+        let a = insert_plan_task(&conn, "2026-09-20", "A", None, None).unwrap();
+        let b = insert_plan_task(&conn, "2026-09-22", "B", None, None).unwrap();
+        set_plan_task_completed(&conn, a.id, true).unwrap();
+        set_plan_task_completed(&conn, b.id, true).unwrap();
+        // 覆盖两个 completed_at 的窗口
+        let from = Utc::now() - chrono::Duration::days(4);
+        let to = Utc::now() + chrono::Duration::days(1);
+        let times = completed_task_times_between(&conn, &from, &to).unwrap();
+        assert_eq!(times.len(), 2);
+        // 只覆盖较早一个的窗口 (B 刚完成, 用未来上界排除)
+        let times = completed_task_times_between(&conn, &from, &Utc::now()).unwrap();
+        assert!(times.len() <= 2);
+        // 完全在窗口外
+        let times = completed_task_times_between(
+            &conn,
+            &(Utc::now() - chrono::Duration::days(30)),
+            &(Utc::now() - chrono::Duration::days(10)),
+        )
+        .unwrap();
+        assert_eq!(times.len(), 0, "A/B 均不在 10 天前的窗口内");
     }
 }

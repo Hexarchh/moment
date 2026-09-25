@@ -256,6 +256,47 @@ pub fn plan_delete(state: State<'_, AppState>, id: i64) -> AppResult<()> {
     state.db().with(|c| repo::delete_plan_task(c, id))
 }
 
+// ---------- 活动热力图 ----------
+
+/// 热力图的一格: 当天有效使用分钟数 + 完成任务数 (强度分级由前端统一计算)
+#[derive(Serialize, Clone)]
+pub struct ActivityDay {
+    /// 本地日期 YYYY-MM-DD
+    pub date: String,
+    pub screen_time_minutes: i64,
+    pub completed_tasks: i64,
+}
+
+/// 近 N 天逐日聚合 (默认 365)。屏幕时长复用 total_between 的日界裁剪口径,
+/// 完成任务按 completed_at 的本地日期分桶。一次调用一次性返回, 无轮询。
+#[tauri::command]
+pub fn activity(state: State<'_, AppState>, days: Option<i64>) -> AppResult<Vec<ActivityDay>> {
+    let days = days.filter(|d| *d > 0).unwrap_or(365).min(400);
+    let (totals, task_counts) = state.db().with(|c| {
+        let mut totals = Vec::with_capacity(days as usize);
+        for i in (0..days).rev() {
+            let (s, e) = day_bounds(i);
+            totals.push((local_midnight(i).with_timezone(&Local).date_naive().to_string(), repo::total_between(c, &s, &e)?));
+        }
+        let mut counts: std::collections::HashMap<String, i64> = std::collections::HashMap::new();
+        for t in repo::completed_task_times_between(c, &local_midnight(days - 1), &local_midnight(-1))? {
+            if let Ok(dt) = DateTime::parse_from_rfc3339(&t) {
+                *counts.entry(dt.with_timezone(&Local).date_naive().to_string()).or_insert(0) += 1;
+            }
+        }
+        Ok::<_, rusqlite::Error>((totals, counts))
+    })?;
+
+    Ok(totals
+        .into_iter()
+        .map(|(date, secs)| ActivityDay {
+            completed_tasks: task_counts.get(&date).copied().unwrap_or(0),
+            date,
+            screen_time_minutes: (secs / 60.0).floor() as i64,
+        })
+        .collect())
+}
+
 /// 设置页/托盘共用的暂停开关; 同步托盘菜单文案
 #[tauri::command]
 pub fn set_paused(app: AppHandle, state: State<'_, AppState>, paused: bool) -> AppResult<()> {

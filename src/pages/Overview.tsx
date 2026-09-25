@@ -5,6 +5,7 @@ import { HourlyActivityChart } from "../components/HourlyActivityChart";
 import { ScreenTimeSummary } from "../components/ScreenTimeSummary";
 import { WeeklyUsageChart } from "../components/WeeklyUsageChart";
 import { TodayPlanCard } from "../components/TodayPlanCard";
+import { ActivityGraph } from "../components/ActivityGraph";
 import { api, formatDuration, type Overview as OverviewData } from "../lib/api";
 
 type Period = "today" | "7d";
@@ -61,6 +62,8 @@ export function Overview({ period, onOpenApps, onOpenPlan }: { period: Period; o
         </section>
         <AppUsageList apps={apps} loading={!data && !error} onAppClick={onOpenApps} />
       </div>
+
+      <ActivityGraph />
     </div>
   );
 }

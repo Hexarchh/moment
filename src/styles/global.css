@@ -131,6 +131,45 @@ html.light .segmented-control button.is-selected { background: #fff; color: #1c1
 @keyframes page-in { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: none; } }
 .page-enter { animation: page-in 180ms ease-out; }
 
+/* ---------- Moments 活动热力图 ---------- */
+.activity-card { margin-top: 24px; padding: 24px 32px 18px; background: var(--color-card); border-radius: 26px; }
+.activity-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+.activity-head h2 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.activity-head span { color: var(--color-faint); font-size: 13px; }
+.activity-wrap { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 6px; }
+.activity-weekdays { display: grid; grid-template-rows: repeat(7, 1fr); gap: 3px; color: var(--color-faint); font-size: 10.5px; line-height: 1; }
+.activity-weekdays span { display: flex; align-items: center; }
+.activity-scroll { min-width: 0; }
+.activity-months { display: grid; grid-template-columns: repeat(var(--weeks), minmax(0, 1fr)); gap: 3px; margin-bottom: 6px; height: 13px; color: var(--color-faint); font-size: 11px; line-height: 1; }
+.activity-months span { white-space: nowrap; overflow: visible; }
+.activity-grid { display: grid; grid-template-columns: repeat(var(--weeks), minmax(0, 1fr)); grid-template-rows: repeat(7, auto); gap: 3px; }
+.activity-cell { position: relative; width: 100%; aspect-ratio: 1; }
+.activity-box { display: block; position: absolute; inset: 0; border-radius: 2.5px; background: rgba(255, 255, 255, 0.07); transition: transform 130ms ease-out, filter 130ms ease-out; }
+.activity-box[data-level="1"] { background: rgba(10, 132, 255, 0.28); }
+.activity-box[data-level="2"] { background: rgba(10, 132, 255, 0.5); }
+.activity-box[data-level="3"] { background: rgba(10, 132, 255, 0.75); }
+.activity-box[data-level="4"] { background: #0a84ff; }
+html.light .activity-box { background: rgba(0, 0, 0, 0.06); }
+html.light .activity-box[data-level="1"] { background: rgba(10, 132, 255, 0.25); }
+html.light .activity-box[data-level="2"] { background: rgba(10, 132, 255, 0.45); }
+html.light .activity-box[data-level="3"] { background: rgba(10, 132, 255, 0.68); }
+html.light .activity-box[data-level="4"] { background: #0a84ff; }
+.activity-cell:hover .activity-box { transform: scale(1.05); filter: brightness(1.15); }
+.activity-tip { position: absolute; bottom: calc(100% + 7px); left: 50%; z-index: 6; display: flex; flex-direction: column; gap: 2px; min-width: 128px; padding: 8px 11px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-card); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35); opacity: 0; transform: translateX(-50%) scale(0.96); transform-origin: bottom center; pointer-events: none; white-space: nowrap; transition: opacity 130ms ease-out, transform 130ms ease-out; }
+html.light .activity-tip { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12); }
+.activity-cell:hover .activity-tip { opacity: 1; transform: translateX(-50%) scale(1); }
+.activity-tip.tip-start { left: 0; transform: translateX(-0.3em) scale(0.96); }
+.activity-cell:hover .activity-tip.tip-start { transform: translateX(-0.3em) scale(1); }
+.activity-tip.tip-end { left: auto; right: 0; transform: translateX(0.3em) scale(0.96); }
+.activity-cell:hover .activity-tip.tip-end { transform: translateX(0.3em) scale(1); }
+.activity-tip b { color: var(--color-text); font-size: 12px; font-weight: 600; }
+.activity-tip em { color: var(--color-muted); font-size: 11.5px; font-style: normal; font-variant-numeric: tabular-nums; }
+.activity-legend { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 12px; color: var(--color-faint); font-size: 11.5px; }
+.activity-legend .activity-box { position: static; width: 10px; height: 10px; }
+@media (prefers-reduced-motion: reduce) { .activity-box, .activity-tip { transition: none; } }
+@media (max-width: 1020px) { .activity-card { padding-inline: 24px; } }
+@media (max-width: 760px) { .activity-wrap { grid-template-columns: 14px minmax(0, 1fr); } .activity-grid, .activity-months { gap: 2px; } .activity-weekdays { gap: 2px; } }
+
 /* ---------- 每日计划 ---------- */
 .plan-page { max-width: 760px; margin: 0 auto; padding: 26px 32px 48px; }
 .plan-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
